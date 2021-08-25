@@ -12,7 +12,18 @@ function App() {
   const [currencyOpt, setCurrencyOpt] = useState([]);
   const [fromCurrency, setFromCurrency] = useState([]);
   const [toCurrency, setToCurrency] = useState([]);
-  console.log(currencyOpt)
+  const [exchangeRate, setExchangeRate] = useState();
+  const [amount, setAmout] = useState(1);
+  const [amountInFromCurrency, setAmountInFromCurrency] = useState(true);
+
+  let toAmount, fromAmount;
+  if (amountInFromCurrency) {
+    fromAmount = amount;
+    toAmount = amount * exchangeRate;
+  } else {
+    toAmount = amount;
+    fromAmount = amount / exchangeRate;
+  }
 
   useEffect(() => {
     fetch(BASE_URL)
@@ -22,8 +33,28 @@ function App() {
         setCurrencyOpt([data.base, ...Object.keys(data.rates)])
         setFromCurrency(data.base)
         setToCurrency(firstCurrency)
+        setExchangeRate(data.rates[firstCurrency])
+
       })
   }, []);
+
+  useEffect(() => {
+    if(fromCurrency != null && toCurrency != null) {
+      fetch(`${BASE_URL}?from=${fromCurrency}&to=${toCurrency}`)
+      .then(res => res.json())
+      .then(data => setExchangeRate(data.rates[toCurrency]))
+    }
+  }, [fromCurrency, toCurrency])
+
+  function handleFromAmountChange(e) {
+    setAmout(e.target.value);
+    setAmountInFromCurrency(true);
+  }
+
+  function handleToAmountChange(e) {
+    setAmout(e.target.value);
+    setAmountInFromCurrency(false);
+  }
 
   return (
     <div className="App">
@@ -33,11 +64,17 @@ function App() {
       <CurrencyRow
         currencyOpt={currencyOpt}
         selectedCurrency={fromCurrency}
+        onChangeCurrency={e => setFromCurrency(e.target.value)}
+        onChangeAmount={handleFromAmountChange}
+        amount={fromAmount}
       />
       <div>=</div>
       <CurrencyRow
         currencyOpt={currencyOpt}
         selectedCurrency={toCurrency}
+        onChangeCurrency={e => setToCurrency(e.target.value)}
+        onChangeAmount={handleToAmountChange}
+        amount={toAmount}
       />
     </div>
   );
